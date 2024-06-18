@@ -91,6 +91,13 @@ _fix_metrics() {
 config_load openmptcprouter
 config_foreach _fix_metrics interface
 
+if [ -z "$(uci -q get network.globals.packet_steering)" ]; then
+	uci -q batch <<-EOF
+		set network.globals.packet_steering="0"
+		commit network
+	EOF
+fi
+
 if [ "$(uci -q show network.lan | grep multipath)" != "" ]; then
 	exit 0
 fi
@@ -461,7 +468,7 @@ if [ "$board" = "z8102ax-128m" ] || [ "$board" = "z8102ax-64m" ] || [ "$board" =
 	set network.modem1.iptype='ipv4v6'
 	set network.modem1.addlatency='0'
 	set network.modem1.force_link='1'
-	set network.modem1.device='/sys/devices/platform/11200000.usb/usb1/1-1/1-1.1'
+	set network.modem1.device='/sys/devices/platform/soc/11200000.usb/usb1/1-1/1-1.1'
 	set network.modem1.peerdns='0'
 	set network.modem1.delegate='0'
 	set network.modem1.multipath='on'
@@ -473,7 +480,7 @@ if [ "$board" = "z8102ax-128m" ] || [ "$board" = "z8102ax-64m" ] || [ "$board" =
 	set network.modem2.iptype='ipv4v6'
 	set network.modem2.addlatency='0'
 	set network.modem2.force_link='1'
-	set network.modem2.device='/sys/devices/platform/11200000.usb/usb1/1-1/1-1.2'
+	set network.modem2.device='/sys/devices/platform/soc/11200000.usb/usb1/1-1/1-1.2'
 	set network.modem2.peerdns='0'
 	set network.modem2.delegate='0'
 	set network.modem2.multipath='on'
@@ -490,5 +497,9 @@ fi
 uci -q commit macvlan
 uci -q commit network
 uci -q commit dhcp
+# Disable ttyd by default
+uci -q set ttyd.ttyd1.enable='0'
+uci -q commit ttyd
+
 rm -f /tmp/luci-indexcache
 exit 0

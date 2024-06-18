@@ -560,9 +560,10 @@ _get_vps_config() {
 			/etc/init.d/xray restart
 		fi
 	fi
-	if [ -n "$(uci -q get openvpn.omr)" ] && [ "$(uci -q get openvpn.omr.remote)" != "127.0.0.1" ] && [ "$(uci -q get openvpn.omr.remote)" != "$vpsip" ] && [ "$(uci -q get openmptcprouter.settings.ha)" != "1" ]; then
+	if [ -n "$(uci -q get openvpn.omr)" ] && [ "$(uci -q get openvpn.omr.remote)" != "127.0.0.1" ] && [ -z "$(uci -q get openvpn.omr.remote | grep $vpsip)" ] && [ "$(uci -q get openmptcprouter.settings.ha)" != "1" ]; then
 		uci -q batch <<-EOF >/dev/null
-			set openvpn.omr.remote="$vpsip"
+			delete openvpn.omr.remote
+			add_list openvpn.omr.remote="$vpsip"
 			commit openvpn
 		EOF
 		if [ "$(uci -q get openvpn.omr.enabled)" = "1" ]; then
@@ -1070,8 +1071,8 @@ _vps_firewall_redirect_port() {
 		#return
 	fi
 	xray="$v2ray"
-	[ "$(uci -q get v2ray.main.enabled)" = "0" ] && [ "$(uci -q get openmptcprouter.omr.v2ray)" != "down" ] && v2ray="0"
-	[ "$(uci -q get xray.main.enabled)" = "0" ] && [ "$(uci -q get openmptcprouter.omr.xray)" != "down" ] && xray="0"
+	([ "$(uci -q get v2ray.main.enabled)" = "0" ] || [ "$(uci -q get openmptcprouter.omr.v2ray)" = "down" ]) && v2ray="0"
+	([ "$(uci -q get xray.main.enabled)" = "0" ] || [ "$(uci -q get openmptcprouter.omr.xray)" = "down" ]) && xray="0"
 	[ "$proto" = "all" ] && proto="tcp udp"
 	[ "$proto" = "" ] && proto="tcp udp"
 	[ "$src" = "vpn" ] && [ -n "$proto" ] && [ -n "$src_dport" ] && [ "$enabled" != "0" ] && [ "$name" != "Allow-DHCP-Request-VPN" ] && {
@@ -1221,7 +1222,7 @@ _vps_firewall_redirect_port() {
 				fi
 				if [ "$family" = "ipv4" ]; then
 					if [ "$src_dip" = "" ] && [ "$src_ip" = "" ]; then
-						[ "$v2ray" = "1"] && vpsfwlist=$(echo "$vpsfwlist" | grep -v "$src_dport	# OMR $username open router $src_dport port ${protoi} --- V2Ray to ${dest_ip}:${dest_port}$")
+						[ "$v2ray" = "1" ] && vpsfwlist=$(echo "$vpsfwlist" | grep -v "$src_dport	# OMR $username open router $src_dport port ${protoi} --- V2Ray to ${dest_ip}:${dest_port}$")
 						[ "$xray" = "1" ] && vpsfwlist=$(echo "$vpsfwlist" | grep -v "$src_dport	# OMR $username open router $src_dport port ${protoi} --- XRay to ${dest_ip}:${dest_port}$")
 						[ "$v2ray" = "1" ] && [ "$username" = "openmptcprouter" ] && vpsfwlist=$(echo "$vpsfwlist" | grep -v "$src_dport	# OMR open router $src_dport port ${protoi} --- V2Ray to ${dest_ip}:${dest_port}$")
 						[ "$xray" = "1" ] && [ "$username" = "openmptcprouter" ] && vpsfwlist=$(echo "$vpsfwlist" | grep -v "$src_dport	# OMR open router $src_dport port ${protoi} --- XRay to ${dest_ip}:${dest_port}$")
@@ -1822,8 +1823,8 @@ _set_config_from_vps() {
 			set openvpn.omr.client=1
 			set openvpn.omr.allow_recursive_routing=1
 		EOF
-		if [ "$(uci -q get openvpn.omr.remote)" != "127.0.0.1" ]; then
-			uci -q set openvpn.omr.remote="$vpsip"
+		if [ -z "$(uci -q get openvpn.omr.remote | grep $vpsip)" ]; then
+			uci -q add_list openvpn.omr.remote="$vpsip"
 		fi
 		uci -q commit openvpn
 		logger -t "OMR-VPS" "OpenVPN restart..."
@@ -2220,11 +2221,12 @@ _config_service() {
 	[ "$(uci -q get openmptcprouter.${servername}.get_config)" = "1" ] && ([ "$(uci -q get openmptcprouter.${servername}.master)" = "1" ] || [ "$(uci -q get openmptcprouter.${servername}.current)" = "1" ]) && {
 		_set_config_from_vps
 		_get_gre_tunnel
-	}
-
-	([ "$(uci -q get openmptcprouter.${servername}.master)" = "1" ] || [ "$(uci -q get openmptcprouter.${servername}.current)" = "1" ]) && {
 		_get_vps_config
 	}
+
+#	([ "$(uci -q get openmptcprouter.${servername}.master)" = "1" ] || [ "$(uci -q get openmptcprouter.${servername}.current)" = "1" ]) && {
+#		_get_vps_config
+#	}
 
 	if [ "$(uci -q get openmptcprouter.settings.firstboot)" != "0" ]; then
 		[ -n "$(cat /proc/cpuinfo | grep aes)" ] && {
@@ -2269,7 +2271,7 @@ _config_service() {
 		[ -n "$(uci -q get openvpn.omr)" ] && [ -z "$(_set_openvpn_vps)" ] && error=1
 		[ -n "$(uci -q get mlvpn.general)" ] && [ -z "$(_set_mlvpn_vps)" ] && error=1
 		_set_vps_firewall
-		[ -n "$(uci -q get wireguard)" ] && [ -z "$(_set_wireguard_vps)" ] && error=1
+		[ -n "$(uci -q show network | grep wireguard)" ] && [ -z "$(_set_wireguard_vps)" ] && error=1
 	fi
 	_backup_list
 	redirect_port="0"

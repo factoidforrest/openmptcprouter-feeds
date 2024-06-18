@@ -578,7 +578,7 @@ function wizard_add()
 	--	ucic:set("sqm","omrvpn","enabled","0")
 	--end
 
-	ucic:set("sqm","omrvpn","enabled","1")
+	ucic:set("sqm","omrvpn","enabled","0")
 	ucic:set("sqm","omrvpn","download","0")
 	ucic:set("sqm","omrvpn","upload","0")
 
@@ -1003,8 +1003,8 @@ function wizard_add()
 		ucic:set("xray","omrout","s_vless_reality_user_security","chacha20-poly1305")
 		ucic:set("xray","omrout","s_trojan_user_security","chacha20-poly1305")
 		ucic:set("xray","omrout","s_socks_user_security","chacha20-poly1305")
-		ucic:set("xray","omrout","s_shadowsocks_method","2022-blake3-chacha20-poly1305")
-		--ucic:set("xray","omrout","s_shadowsocks_method","2022-blake3-aes-256-gcm")
+		--ucic:set("xray","omrout","s_shadowsocks_method","2022-blake3-chacha20-poly1305")
+		ucic:set("xray","omrout","s_shadowsocks_method","2022-blake3-aes-256-gcm")
 		--ucic:set("shadowsocks-rust","sss0","method","2022-blake3-chacha20-poly1305")
 		--ucic:set("shadowsocks-rust","sss1","method","2022-blake3-chacha20-poly1305")
 		ucic:set("shadowsocks-rust","sss0","method","2022-blake3-aes-256-gcm")
@@ -1264,6 +1264,7 @@ function wizard_add()
 		luci.sys.call("/etc/init.d/v2ray restart >/dev/null 2>/dev/null")
 		luci.sys.call("/etc/init.d/xray restart >/dev/null 2>/dev/null")
 		luci.sys.call("/etc/init.d/sqm restart >/dev/null 2>/dev/null")
+		luci.sys.call("/etc/init.d/omr-bypass restart >/dev/null 2>/dev/null")
 		luci.sys.call("/etc/init.d/sqm-autorate restart >/dev/null 2>/dev/null")
 		luci.sys.call("/etc/init.d/sysntpd restart >/dev/null 2>/dev/null")
 		luci.http.redirect(luci.dispatcher.build_url("admin/system/" .. menuentry:lower() .. "/status"))
@@ -1330,6 +1331,11 @@ function settings_add()
 	local disable_ipv6 = luci.http.formvalue("enableipv6") or "1"
 	ucic:set("openmptcprouter","settings","disable_ipv6",disable_ipv6)
 	--local dump = require("luci.util").ubus("openmptcprouter", "disableipv6", { disable_ipv6 = tonumber(disable_ipv6)})
+
+	-- Disable 6in4
+	local disable_6in4 = luci.http.formvalue("enable6in4") or "1"
+	ucic:set("openmptcprouter","settings","disable_6in4",disable_6in4)
+
 
 	-- Enable/disable external check
 	local externalcheck = luci.http.formvalue("externalcheck") or "1"

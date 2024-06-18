@@ -6,13 +6,13 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
 
-PKG_VERSION:=1.75.0
+PKG_VERSION:=1.78.0
 
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.gz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
-PKG_HASH:=5b739f45bc9d341e2d1c570d65d2375591e22c2d23ef5b8a37711a0386abc088
+PKG_HASH:=ff544823a5cb27f2738128577f1e7e00ee8f4c83f2a348781ae4fc355e91d5a9
 HOST_BUILD_DIR:=$(BUILD_DIR)/host/rustc-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Luca Barbato <lu_zero@luminem.org>
@@ -73,10 +73,10 @@ HOST_CONFIGURE_ARGS = \
 	--datadir=$(STAGING_DIR)/host/share \
 	--mandir=$(STAGING_DIR)/host/man \
 	--dist-compression-formats=gz \
-	--enable-missing-tools \
 	--disable-sanitizers \
 	--release-channel=stable \
 	--enable-cargo-native-static \
+	--bootstrap-cache-path=$(DL_DIR)/rustc \
 	--set=llvm.download-ci-llvm=true \
 	$(TARGET_CONFIGURE_ARGS)
 
